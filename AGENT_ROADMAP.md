@@ -3,7 +3,7 @@
 > Как собрать ИИ-агента, который достроит себя сам.
 > Дата: 2026-03-09
 
-**Текущее состояние (v3):** Компрессия контекста, RAG (ChromaDB), bounded memory, safe_edit, ask_human, set_goal/read_goals, add_tool, browse_web, rag_index_evolution, rag_list, rag_fetch, runner как источник истины, capability-gate. 32 инструмента. **Инфраструктура самоулучшения:** evaluator, self_improve (run_one_cycle), evolution_log.jsonl, protected paths. **Blueprint (Фаза 1):** Capability zones (Red/Orange/Yellow/Green), Metacognitive monitor, Forgetting curves. См. [README.md](README.md).
+**Текущее состояние (v3):** Компрессия контекста, RAG (ChromaDB), bounded memory, safe_edit, ask_human, set_goal/read_goals, add_tool, browse_web, rag_index_evolution, rag_list, rag_fetch, runner как источник истины, capability-gate. 32 инструмента. **Инфраструктура самоулучшения:** evaluator, self_improve (run_one_cycle), evolution_log.jsonl, protected paths. **Blueprint Фаза 1 (выполнена):** Capability zones (Red/Orange/Yellow/Green), Metacognitive monitor, Forgetting curves. **Следующий этап — Фаза 2.1:** Memory Hierarchy (Letta-style): Core (identity + working-memory prefix) → Recall (session-history, evolution-log в ChromaDB) → Archival (knowledge). См. [README.md](README.md).
 
 ---
 
