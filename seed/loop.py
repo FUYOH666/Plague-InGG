@@ -17,8 +17,47 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 SAFETY_CAP = 5000
 CONTEXT_COMPRESS_THRESHOLD = 40_000  # estimated tokens
 CONTEXT_KEEP_RECENT = 10  # keep last N messages when compressing
+CORE_WORKING_MEMORY_CHARS = 1500  # first N chars of working-memory in Core
+RECALL_MAX_CHARS = 3000  # max chars from recall search
 
 from router import ModelRouter
+
+
+def _build_core_block() -> str:
+    """Core memory (Blueprint 2.1): identity.md + first 1500 chars of working-memory.md."""
+    memory_dir = PROJECT_ROOT / "data" / "memory"
+    parts = []
+    identity_path = memory_dir / "identity.md"
+    if identity_path.exists():
+        parts.append(identity_path.read_text(encoding="utf-8", errors="replace").strip())
+    working_path = memory_dir / "working-memory.md"
+    if working_path.exists():
+        text = working_path.read_text(encoding="utf-8", errors="replace").strip()
+        parts.append(text[:CORE_WORKING_MEMORY_CHARS] + ("..." if len(text) > CORE_WORKING_MEMORY_CHARS else ""))
+    if not parts:
+        return ""
+    return "\n\n---\n\n".join(parts)
+
+
+def _get_last_user_message(messages: list[dict]) -> str:
+    """Extract last user message content for recall search."""
+    for m in reversed(messages):
+        if m.get("role") == "user":
+            content = m.get("content") or ""
+            if isinstance(content, str) and content.strip():
+                return content.strip()
+    return ""
+
+
+def _build_system_with_core_and_recall(base_prompt: str, recall_block: str) -> str:
+    """Assemble system prompt: base + Core + optional Recall (Blueprint 2.1)."""
+    core = _build_core_block()
+    out = base_prompt.strip()
+    if core:
+        out += "\n\n## Core memory\n\n" + core
+    if recall_block and recall_block.strip():
+        out += "\n\n## Relevant past context\n\n" + recall_block.strip()
+    return out
 
 
 def _session_log_path() -> Path:
@@ -257,6 +296,19 @@ def run_loop(
         # Компрессия контекста при превышении порога (раз в 10 раундов)
         if round_num % 10 == 0 and _estimate_tokens(messages) > CONTEXT_COMPRESS_THRESHOLD:
             messages = _compress_messages(router, messages, verbose)
+
+        # Memory Hierarchy (Blueprint 2.1): Recall — semantic search by last user message
+        recall_block = ""
+        if os.getenv("MEMORY_RECALL_ENABLED", "true").lower() in ("true", "1", "yes"):
+            try:
+                from rag import recall_search
+
+                last_user = _get_last_user_message(messages)
+                if last_user:
+                    recall_block = recall_search(last_user, top_n=5, max_chars=RECALL_MAX_CHARS)
+            except Exception:
+                pass
+        messages[0]["content"] = _build_system_with_core_and_recall(system_prompt, recall_block)
 
         # Call LLM
         response = router.chat(

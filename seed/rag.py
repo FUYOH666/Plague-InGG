@@ -12,6 +12,7 @@ CHROMA_PATH = PROJECT_ROOT / "data" / "rag" / "chroma"
 CHUNK_SIZE = 2048  # ~512 tokens
 CHUNK_OVERLAP = 256  # ~64 tokens
 COLLECTION_NAME = "knowledge"
+RECALL_COLLECTION_NAME = "recall"
 
 
 def _get_env(key: str, alt: str = "") -> str:
@@ -73,6 +74,131 @@ def _get_collection():
         name=COLLECTION_NAME,
         metadata={"hnsw:space": "cosine"},
     )
+
+
+def _get_recall_collection():
+    """Get or create recall collection (session-history, evolution-log). Same settings as knowledge."""
+    import chromadb
+    from chromadb.config import Settings
+
+    CHROMA_PATH.mkdir(parents=True, exist_ok=True)
+    client = chromadb.PersistentClient(path=str(CHROMA_PATH), settings=Settings(anonymized_telemetry=False))
+    return client.get_or_create_collection(
+        name=RECALL_COLLECTION_NAME,
+        metadata={"hnsw:space": "cosine"},
+    )
+
+
+def recall_index(path: str) -> str:
+    """Index file into recall collection. Chunks with optional timestamp metadata for salience."""
+    target = (PROJECT_ROOT / path).resolve()
+    if not target.exists():
+        return f"[ERROR] Path not found: {path}"
+
+    import re
+    from datetime import datetime
+
+    content = target.read_text(encoding="utf-8", errors="replace")
+    chunks = _chunk_text(content)
+    if not chunks:
+        return "No text to index."
+
+    # Parse timestamps from ## YYYY-MM-DD HH:MM headers for salience
+    ids_to_add = []
+    docs_to_add = []
+    metadatas = []
+    for i, chunk in enumerate(chunks):
+        chunk_id = f"{path}:{i}"
+        ids_to_add.append(chunk_id)
+        docs_to_add.append(chunk)
+        ts = None
+        for line in chunk.split("\n")[:5]:
+            m = re.match(r"^##\s+(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2})", line)
+            if m:
+                try:
+                    dt = datetime.strptime(m.group(1), "%Y-%m-%d %H:%M")
+                    ts = dt.isoformat()
+                except ValueError:
+                    pass
+                break
+        metadatas.append({"timestamp": ts or datetime.now().isoformat(), "source": path})
+
+    try:
+        embeddings = _embed_texts(docs_to_add)
+        if len(embeddings) != len(docs_to_add):
+            return f"[ERROR] Embedding count mismatch: {len(embeddings)} vs {len(docs_to_add)}"
+
+        coll = _get_recall_collection()
+        try:
+            coll.delete(where={"source": path})
+        except Exception:
+            pass
+        coll.add(ids=ids_to_add, embeddings=embeddings, documents=docs_to_add, metadatas=metadatas)
+        return f"OK: indexed {len(docs_to_add)} chunks from {path} into recall"
+    except Exception as e:
+        return f"[ERROR] {e}"
+
+
+def recall_search(query: str, top_n: int = 5, max_chars: int = 3000) -> str:
+    """Search recall collection by query. Returns concatenated results, max max_chars. Applies salience filter if memory_utils available."""
+    try:
+        coll = _get_recall_collection()
+        count = coll.count()
+        if count == 0:
+            return ""
+
+        query_embedding = _embed_texts([query])
+        if not query_embedding:
+            return ""
+
+        results = coll.query(
+            query_embeddings=query_embedding,
+            n_results=min(top_n * 2, count),
+            include=["documents", "metadatas", "distances"],
+        )
+        docs = results.get("documents", [[]])[0]
+        meta_list = results.get("metadatas")
+        if meta_list and meta_list[0]:
+            meta_list = meta_list[0]
+        else:
+            meta_list = [{}] * len(docs)
+
+        if not docs:
+            return ""
+
+        doc_to_meta = {d: (meta_list[i] if i < len(meta_list) else {}) for i, d in enumerate(docs)}
+
+        # Rerank for better relevance
+        reranked = _rerank(query, docs, top_n=top_n)
+        items = []
+        for doc, score in reranked:
+            meta = doc_to_meta.get(doc, {})
+            items.append({
+                "content": doc,
+                "timestamp": meta.get("timestamp") if isinstance(meta, dict) else None,
+                "importance": float(score) if score else 1.0,
+            })
+
+        # Apply salience filter (Forgetting curves)
+        try:
+            from memory_utils import filter_by_salience
+
+            items = filter_by_salience(items)
+        except ImportError:
+            pass
+
+        out_parts = []
+        total = 0
+        for item in items:
+            c = item.get("content", "")
+            if total + len(c) > max_chars:
+                out_parts.append(c[: max_chars - total] + "...")
+                break
+            out_parts.append(c)
+            total += len(c)
+        return "\n\n---\n\n".join(out_parts) if out_parts else ""
+    except Exception:
+        return ""
 
 
 def rag_index(path: str) -> str:
