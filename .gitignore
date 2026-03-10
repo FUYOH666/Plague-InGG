@@ -1,0 +1,26 @@
+.env
+.venv/
+.DS_Store
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+.uv/
+
+# Runtime data (may contain session content, tokens)
+data/logs/
+data/runner/
+data/memory/identity.md
+data/memory/working-memory.md
+data/memory/evolution-log.md
+data/memory/session-history.md
+data/memory/goals.md
+data/memory/paused_session.json
+data/memory/knowledge/evolution_index.md
+data/memory/knowledge/_cap_bench.md
+
+# Archive (internal history, IPs)
+docs/archive/
+
+# RAG index (user-specific)
+data/rag/
