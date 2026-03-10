@@ -61,6 +61,7 @@ uv run python seed/telegram_main.py
 | Script | Description | Command |
 |--------|-------------|---------|
 | index_recall | Index session-history, evolution-log into recall (Memory Hierarchy 2.1) | `uv run python scripts/index_recall.py` |
+| sleep_consolidation | Episodic → semantic: extract facts, index into RAG (Blueprint 2.2) | `uv run python scripts/sleep_consolidation.py` |
 | daily_reflection | Reflection: session-history + evolution-log → working-memory | `uv run python scripts/daily_reflection.py` |
 | self_test | pytest, on fail — git revert + evolution_log | `uv run python scripts/self_test.py` |
 | capability_benchmark | Benchmark: run_tests, read_file, evolution_log, RAG, safe_edit | `uv run python scripts/capability_benchmark.py` |

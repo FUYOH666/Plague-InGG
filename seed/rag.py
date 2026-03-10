@@ -245,6 +245,28 @@ def rag_index(path: str) -> str:
         return f"[ERROR] {e}"
 
 
+def rag_index_text(text: str, metadata: dict | None = None) -> str:
+    """Index arbitrary text into knowledge collection. For sleep consolidation, etc."""
+    if not text or not text.strip():
+        return "[ERROR] Empty text"
+    from datetime import datetime
+
+    chunks = _chunk_text(text)
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    meta = dict(metadata or {}, source="sleep", timestamp=datetime.now().isoformat())
+    ids = [f"sleep:{ts}:{i}" for i in range(len(chunks))]
+    metadatas = [meta] * len(chunks)
+    try:
+        embeddings = _embed_texts(chunks)
+        if len(embeddings) != len(chunks):
+            return f"[ERROR] Embedding count mismatch"
+        coll = _get_collection()
+        coll.add(ids=ids, embeddings=embeddings, documents=chunks, metadatas=metadatas)
+        return f"OK: indexed {len(chunks)} chunks into knowledge"
+    except Exception as e:
+        return f"[ERROR] {e}"
+
+
 def rag_index_evolution() -> str:
     """Index evolution-log, session-history, recent git log and diffs into RAG. Agent can search own experience."""
     import subprocess

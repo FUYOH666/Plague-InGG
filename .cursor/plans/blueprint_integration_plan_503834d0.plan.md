@@ -166,11 +166,11 @@ flowchart LR
 4. .env: `SLEEP_CONSOLIDATION_INTERVAL=21600` (6 часов в секундах).
 
 **Критерии приёмки:**
-- [ ] Скрипт извлекает факты и индексирует в knowledge
-- [ ] rag_search находит консолидированные факты
-- [ ] Можно запустить вручную: `uv run python scripts/sleep_consolidation.py`
+- [x] Скрипт извлекает факты и индексирует в knowledge
+- [x] rag_search находит консолидированные факты
+- [x] Можно запустить вручную: `uv run python scripts/sleep_consolidation.py`
 
-**Зависимости:** 2.1 (Recall collection должна существовать; sleep пишет в knowledge).
+**Зависимости:** 2.1 (Recall collection должна существовать; sleep пишет в knowledge). **Статус: выполнено**
 
 ---
 
