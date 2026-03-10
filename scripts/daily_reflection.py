@@ -10,6 +10,10 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "seed"))
 
+from dotenv import load_dotenv
+
+load_dotenv(PROJECT_ROOT / ".env")
+
 
 def main() -> None:
     from router import ModelRouter

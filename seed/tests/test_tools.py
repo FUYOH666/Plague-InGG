@@ -29,6 +29,14 @@ class TestReadFile:
         (tmp_project / "a" / "b" / "c.txt").write_text("deep")
         assert tools_module.read_file("a/b/c.txt") == "deep"
 
+    def test_read_file_limit(self, tmp_project):
+        (tmp_project / "long.txt").write_text("a" * 100)
+        result = tools_module.read_file("long.txt", limit=20)
+        assert len(result) <= 60  # 20 chars + truncation message
+        assert "[truncated" in result
+        result_full = tools_module.read_file("long.txt")
+        assert len(result_full) == 100
+
 
 class TestWriteFile:
     def test_write_new_file(self, tmp_project):
@@ -176,6 +184,26 @@ class TestRunPython:
     def test_run_python_via_execute(self):
         result = tools_module.execute_tool("run_python", {"code": "print('ok')"})
         assert "ok" in result
+
+    def test_run_python_import(self, tmp_project):
+        """run_python injects PROJECT_ROOT and seed/ on sys.path."""
+        (tmp_project / "seed").mkdir()
+        (tmp_project / "seed" / "_test_mod.py").write_text("VAL = 42\n")
+        result = tools_module.run_python("from _test_mod import VAL; print(VAL)")
+        assert "42" in result
+
+
+class TestAddToolIdempotent:
+    def test_add_tool_already_exists(self, monkeypatch):
+        """add_tool returns OK when tool already exists (idempotent)."""
+        monkeypatch.setenv("AUTO_APPROVE_ADD_TOOL", "true")
+        result = tools_module.add_tool(
+            "read_file",
+            "Read a file",
+            '{"type": "object", "properties": {"path": {"type": "string"}}, "required": ["path"]}',
+            "return 'stub'",
+        )
+        assert "OK" in result and "already exists" in result
 
 
 class TestTranscribeEmbeddingRerank:

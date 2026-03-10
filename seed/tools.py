@@ -28,13 +28,17 @@ TOOL_SCHEMAS = [
         "type": "function",
         "function": {
             "name": "read_file",
-            "description": "Read contents of a file. Returns the text content.",
+            "description": "Read file. Optional limit=N for first N chars. Omit limit for full file.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "path": {
                         "type": "string",
                         "description": "Path relative to project root (e.g. 'seed/tools.py' or 'AGENT_ROADMAP.md')",
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Max chars to return. Omit for full file.",
                     }
                 },
                 "required": ["path"],
@@ -892,6 +896,14 @@ TOOL_SCHEMAS = [
             "parameters": {"type": "object", "properties": {"module_path": {"type": "string", "description": "Путь к модулю для анализа (например, seed.tools)"}, "dry_run": {"type": "boolean", "description": "Режим проверки без применения изменений"}}, "required": ["module_path"]},
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "evolution_monitor",
+            "description": "Monitors system evolution, triggers hot reload, and manages tool registration. Supports automatic performance tracking and evolution logging.",
+            "parameters": {"type": "object", "properties": {"action": {"type": "string", "enum": ["reload", "register", "monitor", "summary"], "description": "Type of evolution action"}, "module_path": {"type": "string", "description": "Path to module for reload (e.g., seed.self_improve)"}, "tool_name": {"type": "string", "description": "Name of tool to register"}, "description": {"type": "string", "description": "Tool description"}, "force_reload": {"type": "boolean", "description": "Force module reload"}}},
+        },
+    },
 ]
 
 # ---------------------------------------------------------------------------
@@ -953,7 +965,11 @@ def _check_zone_for_edit(path: str) -> str | None:
     """Return error message if edit not allowed, else None."""
     zone = _get_zone(path)
     if zone == "red":
-        return f"[ERROR] Red zone: {path}. Cannot modify evaluator/harness."
+        return (
+            f"[ERROR] Red zone: {path} is protected. "
+            "Protected: evaluator, run_tests_runner, capability_benchmark, self_improve. "
+            "Use add_tool to extend, or edit other files (loop, rag, prompts)."
+        )
     if zone == "orange":
         if os.getenv("AUTO_APPROVE_ADD_TOOL", "").lower() not in ("true", "1", "yes"):
             return (
@@ -963,13 +979,17 @@ def _check_zone_for_edit(path: str) -> str | None:
     return None
 
 
-def read_file(path: str) -> str:
+def read_file(path: str, limit: int | None = None) -> str:
     target = _resolve(path)
     if not target.exists():
         raise ToolError(f"File not found: {path}")
     if not target.is_file():
         raise ToolError(f"Not a file: {path}")
     content = target.read_text(encoding="utf-8", errors="replace")
+    if limit is not None and limit > 0:
+        if len(content) > limit:
+            return content[:limit] + f"\n\n... [truncated, total {len(content)} chars]"
+        return content
     if len(content) > 100_000:
         return content[:100_000] + f"\n\n... [truncated, total {len(content)} chars]"
     return content
@@ -1253,9 +1273,16 @@ def git_diff() -> str:
 
 
 def run_python(code: str) -> str:
+    preamble = f"""import sys
+from pathlib import Path
+PROJECT_ROOT = Path({repr(str(PROJECT_ROOT))})
+sys.path.insert(0, str(PROJECT_ROOT))
+sys.path.insert(0, str(PROJECT_ROOT / "seed"))
+"""
+    code_to_run = preamble + code
     try:
         result = subprocess.run(
-            [sys.executable, "-c", code],
+            [sys.executable, "-c", code_to_run],
             cwd=PROJECT_ROOT,
             capture_output=True,
             text=True,
@@ -1683,7 +1710,7 @@ def {name}({sig}) -> str:
     content = tools_path.read_text(encoding="utf-8")
 
     if f'"{name}"' in content and f"def {name}(" in content:
-        return f"[ERROR] Tool {name} already exists"
+        return f"OK: tool {name} already exists (no changes)"
 
     # Escape for JSON string
     desc_esc = description.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
@@ -1951,6 +1978,97 @@ def auto_discover_tools(module_path: str, dry_run: str = "") -> str:
                 }
         return parameters
 
+def evolution_monitor(action: str = "", module_path: str = "", tool_name: str = "", description: str = "", force_reload: str = "") -> str:
+    """Monitors system evolution, triggers hot reload, and manages tool registration. Supports automatic performance tracking and evolution logging."""
+    """
+    Evolution Monitor Tool - Monitors system evolution and triggers improvements.
+    """
+    
+    import json
+    from pathlib import Path
+    from typing import Any, Dict, Optional
+    
+    PROJECT_ROOT = Path(__file__).parent.parent
+    
+    
+    def evolution_monitor(action: str, module_path: Optional[str] = None, 
+                         tool_name: Optional[str] = None, 
+                         description: Optional[str] = None,
+                         force_reload: bool = False) -> str:
+        """
+        Monitor and manage system evolution with hot reload and tool registration.
+        
+        Args:
+            action: Type of action ('reload', 'register', 'monitor', 'summary')
+            module_path: Path to module for reload (e.g., seed.self_improve)
+            tool_name: Name of tool to register
+            description: Tool description
+            force_reload: Force module reload
+            
+        Returns:
+            JSON string with evolution results
+        """
+        from self_improve import SelfImprover, self_improve
+        from datetime import datetime
+        
+        result = SelfImprover()
+        
+        if action == "reload":
+            if not module_path:
+                module_path = "seed.self_improve"
+            
+            module_info = result.load_module(module_path, force_reload)
+            return json.dumps({
+                "status": "success",
+                "action": "reload",
+                "module": module_info,
+                "timestamp": datetime.now().isoformat()
+            }, indent=2)
+        
+        elif action == "register":
+            if not tool_name or not description:
+                return json.dumps({
+                    "status": "error",
+                    "message": "tool_name and description required for registration"
+                }, indent=2)
+            
+            registration = result.register_tool(
+                tool_func=lambda: None,
+                tool_name=tool_name,
+                description=description
+            )
+            
+            return json.dumps({
+                "status": "success",
+                "action": "register",
+                "tool": registration,
+                "timestamp": datetime.now().isoformat()
+            }, indent=2)
+        
+        elif action == "monitor":
+            performance = result.monitor_performance()
+            return json.dumps({
+                "status": "success",
+                "action": "monitor",
+                "performance": performance,
+                "timestamp": datetime.now().isoformat()
+            }, indent=2)
+        
+        elif action == "summary":
+            summary = result.get_evolution_summary()
+            return json.dumps({
+                "status": "success",
+                "action": "summary",
+                "summary": summary,
+                "timestamp": datetime.now().isoformat()
+            }, indent=2)
+        
+        else:
+            return json.dumps({
+                "status": "error",
+                "message": f"Unknown action: {action}"
+            }, indent=2)
+
 # ---------------------------------------------------------------------------
 # Tool registry
 # ---------------------------------------------------------------------------
@@ -1989,6 +2107,7 @@ TOOL_FUNCTIONS = {
     "ask_human": ask_human,
     "browse_web": browse_web,
     "auto_discover_tools": auto_discover_tools,
+    "evolution_monitor": evolution_monitor,
 }
 
 

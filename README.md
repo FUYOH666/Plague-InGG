@@ -60,6 +60,7 @@ uv run python seed/telegram_main.py
 
 | Script | Description | Command |
 |--------|-------------|---------|
+| pre_launch_check | Verify router, BGE, pytest, capability, recall. Add --smoke for loop test | `uv run python scripts/pre_launch_check.py [--smoke]` |
 | index_recall | Index session-history, evolution-log into recall (Memory Hierarchy 2.1) | `uv run python scripts/index_recall.py` |
 | sleep_consolidation | Episodic → semantic: extract facts, index into RAG (Blueprint 2.2) | `uv run python scripts/sleep_consolidation.py` |
 | daily_reflection | Reflection: session-history + evolution-log → working-memory | `uv run python scripts/daily_reflection.py` |

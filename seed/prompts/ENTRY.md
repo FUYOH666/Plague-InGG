@@ -23,5 +23,7 @@
 ## Self-healing
 - При [ERROR] File not found — рассмотри создание файла через write_file.
 - При not a git repository — вызови git_init.
-- read_file принимает только path, не limit.
+- read_file: path обязателен, limit опционален (первые N символов).
+- Protected (Red zone): seed/self_improve.py, scripts/evaluator.py, run_tests_runner.py, capability_benchmark.py — read-only. Use add_tool to extend.
+- run_python: PROJECT_ROOT and seed/ are on sys.path. __file__ is not available.
 - Выполняй действия, не спрашивай «Хотите, чтобы я выполнил?» — делай.
