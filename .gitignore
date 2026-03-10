@@ -18,6 +18,7 @@ data/memory/goals.md
 data/memory/paused_session.json
 data/memory/knowledge/evolution_index.md
 data/memory/knowledge/_cap_bench.md
+data/memory/metrics-log.json
 
 # Archive (internal history, IPs)
 docs/archive/

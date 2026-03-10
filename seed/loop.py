@@ -177,6 +177,23 @@ def _append_session_history(user_message: str, rounds: int, tools_list: list[str
         history_path.write_text(existing + block, encoding="utf-8")
     except Exception:
         pass
+    _auto_index_recall()
+
+
+def _auto_index_recall() -> None:
+    """Auto-index session-history and evolution-log into recall after each session (autonomous)."""
+    if os.getenv("MEMORY_AUTO_INDEX_RECALL", "true").lower() not in ("true", "1", "yes"):
+        return
+    try:
+        from rag import recall_index
+
+        memory_dir = PROJECT_ROOT / "data" / "memory"
+        for name in ("evolution-log.md", "session-history.md"):
+            path = memory_dir / name
+            if path.exists() and path.stat().st_size > 100:
+                recall_index(str(path.relative_to(PROJECT_ROOT)))
+    except Exception:
+        pass
 
 
 PAUSED_SESSION_PATH = PROJECT_ROOT / "data" / "memory" / "paused_session.json"
@@ -238,10 +255,17 @@ def run_loop(
             "сделай", "добавь", "почини", "запусти", "напиши", "создай",
             "исправь", "реализуй", "удали", "измени", "рефактори", "переделай",
         )
+        _bootstrap_triggers = ("привет", "начни", "старт", "/start")
         _msg_lower = user_message.lower()
+        _msg_stripped = _msg_lower.strip()
+        _is_bootstrap_trigger = (
+            _msg_stripped in _bootstrap_triggers
+            or any(_msg_stripped.startswith(t) for t in ("привет", "начни", "старт"))
+        )
         _is_simple = (
             len(user_message) < 100
             and not any(kw in _msg_lower for kw in _task_keywords)
+            and not _is_bootstrap_trigger
         )
         if _is_simple:
             bootstrap = (
@@ -256,7 +280,8 @@ def run_loop(
             )
         if summary_queue is not None:
             bootstrap = (
-                "[Telegram. Пиши кратко, по сути, живым языком. Без длинных списков и заголовков, если не нужны. Суть важнее объёма.]\n\n"
+                "[Telegram. Пиши кратко, по сути, живым языком. Варьируй ответы — не повторяй один и тот же приоритет. "
+                "Рассмотри разные аспекты из памяти.]\n\n"
             ) + bootstrap
         wrapped_message = bootstrap + f"Пользователь: {user_message}"
 

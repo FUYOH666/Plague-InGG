@@ -28,11 +28,16 @@ uv run python seed/main.py
 
 # Telegram
 uv run python seed/telegram_main.py
+
+# Autonomous (Bootstrap → Discovery → Evolution → Sleep, repeat)
+uv run python scripts/autonomous_loop.py [--max-cycles N]
 ```
 
-**CLI:** Type in terminal, empty line to exit.
+**CLI:** Type in terminal, empty line to exit. "Привет" or "Начни" triggers bootstrap (scan repo, propose improvements).
 
-**Telegram:** Bot waits for messages. Token in `.env` (`telegram_bot_token`). On `ask_human` the session pauses until you reply.
+**Telegram:** Bot waits for messages. `/start` runs bootstrap. Token in `.env` (`telegram_bot_token`). On `ask_human` the session pauses until you reply.
+
+**Autonomous:** Run once, observe. Bootstrap (variative prompts) → Discovery / External inspiration / Reflection / Wildcard (stochastic) → Evolution (from goals or evolution-log «Что изменить») → Sleep. Agent finds other self-improving projects (web, GitHub), invents self-tasks, implements. Ctrl+C or `--max-cycles N` to stop.
 
 **Logs:** `data/logs/session_YYYY-MM-DD_HH-MM-SS.log`
 
@@ -60,6 +65,7 @@ uv run python seed/telegram_main.py
 
 | Script | Description | Command |
 |--------|-------------|---------|
+| autonomous_loop | Bootstrap → Discovery/External-inspiration/Reflection/Wildcard → Evolution → Sleep. Variative prompts, finds external projects, invents self-tasks | `uv run python scripts/autonomous_loop.py [--max-cycles N]` |
 | pre_launch_check | Verify router, BGE, pytest, capability, recall. Add --smoke for loop test | `uv run python scripts/pre_launch_check.py [--smoke]` |
 | index_recall | Index session-history, evolution-log into recall (Memory Hierarchy 2.1) | `uv run python scripts/index_recall.py` |
 | sleep_consolidation | Episodic → semantic: extract facts, index into RAG (Blueprint 2.2) | `uv run python scripts/sleep_consolidation.py` |
@@ -87,14 +93,20 @@ uv run python seed/telegram_main.py
 
 - Two LLMs (80B and 35B params). URLs in .env: LOCAL_AI_LLM_BASE_URL, LOCAL_AI_LLM_SECONDARY_BASE_URL
 - BGE Embedding and Reranker for RAG (LOCAL_AI_EMBEDDING_BASE_URL, LOCAL_AI_RERANKER_BASE_URL)
-- `.env`: telegram_bot_token, api_key_brave_search (see .env.example)
+- `.env`: telegram_bot_token, api_key_brave_search (see .env.example). GITHUB_TOKEN for github_search_code (higher rate limits).
 
 ---
+
+## Autonomous loop (test notes)
+
+- **Discovery:** web_search finds self-improving agents (2024–2025). evolution_log gets research summaries (Self-Rewarding LMs, Gödel Agent, DGM, etc.).
+- **Evolution:** Extracts tasks from evolution-log «### Что изменить» (bullets or numbered). Set GITHUB_TOKEN for github_search_code.
+- **Format:** Agent should add «### Что изменить» with «- задача» or «1. задача» so extraction works.
 
 <details>
 <summary>Русский</summary>
 
-Агент, который исследует, учится и улучшает себя. RAG, bounded memory, discovery (web/GitHub), add_tool, evolution_log. Режим «растущий организм» — может менять свой код и промпты.
+Агент, который исследует, учится и улучшает себя. RAG, bounded memory, discovery (web/GitHub), add_tool, evolution_log. Режим «растущий организм» — может менять свой код и промпты. **Автономный цикл:** ищет другие проекты self-improving agents, придумывает себе задачи, реализует.
 
 **Быстрый старт:** см. Quick start выше. **Архитектура, инструменты, скрипты** — см. таблицы выше.
 

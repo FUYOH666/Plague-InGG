@@ -32,24 +32,31 @@ def _extract_task_from_goals() -> str | None:
 
 
 def _extract_task_from_evolution_log() -> str | None:
-    """Extract first bullet from 'Что изменить' in evolution-log."""
+    """Extract first task from 'Что изменить' in evolution-log.
+    Accepts '### Что изменить' or '### X Что изменить'. Accepts '- ' or '1. ' items."""
     evo_path = PROJECT_ROOT / "data" / "memory" / "evolution-log.md"
     if not evo_path.exists():
         return None
     text = evo_path.read_text(encoding="utf-8")
     in_section = False
     for line in text.splitlines():
-        if "### Что изменить" in line:
+        if "Что изменить" in line and line.strip().startswith("###"):
             in_section = True
             continue
         if in_section:
             stripped = line.strip()
+            if not stripped:
+                continue
+            if stripped.startswith("##") or stripped.startswith("###"):
+                break
             if stripped.startswith("- "):
                 task = stripped[2:].strip()
                 if task and len(task) > 5:
                     return task
-            elif stripped.startswith("#") or (stripped and not stripped.startswith("-")):
-                break
+            elif re.match(r"^\d+\.\s+", stripped):
+                task = re.sub(r"^\d+\.\s+\*\*", "", stripped).replace("**", "").strip()
+                if task and len(task) > 5:
+                    return task
     return None
 
 

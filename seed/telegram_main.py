@@ -153,9 +153,57 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await sender_task
 
 
+BOOTSTRAP_START_MESSAGE = (
+    "Начни. Изучи репозиторий, цели, evolution-log. Что хочешь сделать?"
+)
+
+
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if update.message:
-        await update.message.reply_text("Running.")
+    """Run agent with bootstrap message instead of just 'Running.'"""
+    if not update.message:
+        return
+    await update.message.chat.send_action("typing")
+    system_prompt = load_system_prompt()
+    chat_id = update.message.chat.id
+    summary_queue: asyncio.Queue = asyncio.Queue()
+
+    async def send_summaries() -> None:
+        while True:
+            msg = await summary_queue.get()
+            if msg is None:
+                break
+            try:
+                if isinstance(msg, tuple) and len(msg) == 2 and msg[0] == "__ASK_HUMAN__":
+                    body = f"Reply to this message to continue:\n\n{msg[1]}"
+                    await _send_formatted(update, body)
+                else:
+                    await _send_formatted(update, msg)
+            except Exception:
+                pass
+
+    sender_task = asyncio.create_task(send_summaries())
+    try:
+        response = await asyncio.to_thread(
+            run_agent_sync,
+            BOOTSTRAP_START_MESSAGE,
+            system_prompt,
+            summary_queue,
+            chat_id,
+            None,
+            None,
+        )
+        if response != PAUSED_MAGIC:
+            if not (response and response.strip()):
+                response = "Извини, не удалось сформулировать ответ."
+            elif len(response) > 4000:
+                response = response[:4000] + "\n\n[... truncated]"
+            await _send_formatted(update, response)
+    except Exception as e:
+        print(f"[ERROR] {e}", file=sys.stderr)
+        await update.message.reply_text(f"[ERROR] {e}")
+    finally:
+        summary_queue.put_nowait(None)
+        await sender_task
 
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
