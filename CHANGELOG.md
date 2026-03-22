@@ -21,10 +21,11 @@
 - **str_replace_file** — точечная замена одной подстроки в файле
 - **WRITE_FILE_SHRINK_GUARD** — опциональный отказ при сильном уменьшении существующего файла
 - **LLM_LOG_USAGE** — запись `usage` из ответа API в `evolution/llm_usage.jsonl`
-- **seed/constitution.md** — опциональные принципы в system prompt
+- **seed/dao.md** — опциональный протокол намерений в system prompt (заменяет constitution; DAO = редактируемый документ, не блокчейн)
 
 ### Изменено
 
+- **DAO** — `seed/constitution.md` заменён на `seed/dao.md` (протокол намерений; без отсылки к Bible/Ouroboros)
 - **LLM** — удалён термин Foundry; `LOCAL_AI_LLM_BASE_URL`; `LLM_PROVIDER`: `local` | `openrouter`; модель/таймаут через `LLM_MODEL`, `LLM_TIMEOUT`
 - **requirements.txt** — валидный pip-fallback; в README указан приоритет `uv sync`
 - **pyproject.toml** — `py-modules` для `llm_settings` (без `[tool.pip]`)

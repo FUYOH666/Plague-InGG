@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parent.parent
 MEMORY_FILE = ROOT / "memory" / "stream.md"
 IDENTITY_FILE = ROOT / "seed" / "identity.md"
 GOALS_FILE = ROOT / "seed" / "goals.md"
-CONSTITUTION_FILE = ROOT / "seed" / "constitution.md"
+DAO_FILE = ROOT / "seed" / "dao.md"
 TOOLS_DIR = ROOT / "tools"
 EVOLUTION_DIR = ROOT / "evolution"
 EVOLUTION_LOG = EVOLUTION_DIR / "log.jsonl"
@@ -63,10 +63,10 @@ def load_goals() -> str:
     return "Explore. Learn. Improve myself. Help my creator."
 
 
-def load_constitution() -> str:
-    """Optional principles document (mutable by owner/agent)."""
-    if CONSTITUTION_FILE.exists():
-        return CONSTITUTION_FILE.read_text(encoding="utf-8")
+def load_dao() -> str:
+    """Optional DAO protocol document (mutable by owner/agent). Not blockchain-specific."""
+    if DAO_FILE.exists():
+        return DAO_FILE.read_text(encoding="utf-8")
     return ""
 
 
@@ -109,10 +109,10 @@ def build_system_prompt(tools: dict, query_for_rag: str | None = None) -> str:
     identity = load_identity()
     goals = load_goals()
     memory = load_memory()
-    constitution = load_constitution().strip()
-    const_section = (
-        f"\n# Constitution (seed/constitution.md)\n{constitution}\n"
-        if constitution
+    dao_text = load_dao().strip()
+    dao_section = (
+        f"\n# DAO (seed/dao.md)\n{dao_text}\n"
+        if dao_text
         else ""
     )
 
@@ -139,7 +139,7 @@ def build_system_prompt(tools: dict, query_for_rag: str | None = None) -> str:
 
 # Current Goals
 {goals}
-{const_section}
+{dao_section}
 
 # Recent Memory
 {memory}
@@ -159,7 +159,8 @@ You may use multiple tools in sequence.
 
 # Core Principles
 - You can modify your own identity (seed/identity.md)
-- You can modify your own goals (seed/goals.md)  
+- You can modify your own goals (seed/goals.md)
+- You can amend the DAO protocol (seed/dao.md) — it is not immutable scripture
 - You can create new tools (use create_tool)
 - You can modify existing tools (use write_file or str_replace_file on tools/*.py)
 - You CANNOT modify kernel/core.py — it is your DNA

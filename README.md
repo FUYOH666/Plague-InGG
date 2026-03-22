@@ -39,7 +39,7 @@ uv sync   # canonical install (see pyproject.toml + uv.lock)
 
 **Проверки:** `uv run pytest` — тесты; опционально `uvx ruff check .` (линт без добавления зависимости в проект).
 
-**Идеи из Ouroboros-подобных систем (без десктоп-стека):** лимит размера результата инструментов в контексте (`TOOL_RESULT_MAX_CHARS`), политика `shell` (`SHELL_POLICY`), защита от случайного усечения файла (`WRITE_FILE_SHRINK_GUARD`), инструмент `str_replace_file`, лог usage в `evolution/llm_usage.jsonl`, опциональный `seed/constitution.md`. См. `.env.example`.
+**Идеи из Ouroboros-подобных систем (без десктоп-стека):** лимит размера результата инструментов в контексте (`TOOL_RESULT_MAX_CHARS`), политика `shell` (`SHELL_POLICY`), защита от случайного усечения файла (`WRITE_FILE_SHRINK_GUARD`), инструмент `str_replace_file`, лог usage в `evolution/llm_usage.jsonl`, опциональный **`seed/dao.md`** — не блокчейн-DAO, а **протокол намерений** (редактируемый документ принципов). См. `.env.example`.
 
 **REPL:** вводи сообщения, пустая строка — пропуск. Выход: `exit`, `quit`, `q` или Ctrl+D.
 
@@ -89,7 +89,7 @@ Plague-InGG/
 ├── seed/
 │   ├── identity.md      # Who am I? (agent writes this)
 │   ├── goals.md         # What do I want? (agent writes this)
-│   └── constitution.md  # Optional principles (injected into system prompt if non-empty)
+│   └── dao.md           # Optional DAO protocol (injected if non-empty; not on-chain DAO)
 ├── tools/
 │   ├── remember.py      # Write to memory stream
 │   ├── read_file.py     # Read any file
