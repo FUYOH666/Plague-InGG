@@ -1,9 +1,6 @@
 import requests
-import json
 import importlib
 from datetime import datetime
-import os
-import sys
 
 def execute(params=None):
     """
@@ -61,7 +58,6 @@ def check_dependencies():
     Returns:
         dict: Информация о состоянии зависимостей
     """
-    import sys
     
     modules_to_check = ['requests', 'json', 'datetime', 'importlib']
     dependencies = {}

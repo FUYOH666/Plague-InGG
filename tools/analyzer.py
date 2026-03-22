@@ -1,6 +1,5 @@
 import json
 from datetime import datetime
-from typing import List, Dict, Any, Optional
 
 class Analyzer:
     """Инструмент для анализа данных и генерации инсайтов"""

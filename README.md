@@ -27,6 +27,7 @@ The agent **can modify everything except the kernel**. This is the DNA constrain
 
 ```bash
 git clone https://github.com/FUYOH666/Plague-InGG.git
+# или SSH: git clone git@github.com:FUYOH666/Plague-InGG.git
 cd Plague-InGG
 cp .env.example .env  # LLM, Brave API key, Embedding URL
 uv sync   # canonical install (see pyproject.toml + uv.lock)
@@ -35,6 +36,8 @@ uv sync   # canonical install (see pyproject.toml + uv.lock)
 ```
 
 `pip install -r requirements.txt` is a minimal fallback only; prefer **`uv sync`**.
+
+**Проверки:** `uv run pytest` — тесты; опционально `uvx ruff check .` (линт без добавления зависимости в проект).
 
 **REPL:** вводи сообщения, пустая строка — пропуск. Выход: `exit`, `quit`, `q` или Ctrl+D.
 
@@ -100,7 +103,8 @@ Plague-InGG/
 │   ├── rag.py           # RAG: embed, index, retrieve
 │   └── vectors.jsonl    # Vector index (gitignored)
 ├── tests/
-│   └── test_tools_smoke.py
+│   ├── test_tools_smoke.py
+│   └── test_llm_settings.py
 ├── evolution/
 │   └── log.jsonl        # Structured evolution history
 ├── main.py              # Entry point (LLM adapter)
@@ -118,7 +122,7 @@ Plague-InGG/
 | **Память** | `MEMORY_MAX_CHARS`, RAG (Embedding 9001), memory_manager с archive |
 | **Рефлексия** | Авто-суммаризация после ответа, `REFLECTION_ENABLED` |
 | **Инструменты** | create_tool с smoke-валидацией, memory_manager |
-| **Тесты** | `tests/test_tools_smoke.py` |
+| **Тесты** | `test_tools_smoke.py`, `test_llm_settings.py` |
 | **UX** | `./run`, индикация "thinking...", пустая строка не выходит |
 
 ## How It Works
@@ -150,7 +154,7 @@ Plus: **RAG** (semantic retrieval from memory), **reflection** (auto-summarize a
 
 ### The Key Insight: create_tool
 
-The agent doesn't start with 32 tools. It starts with 7. But one of them — `create_tool` — lets it create *any tool it needs*. Need RAG? Create a RAG tool. Need GitHub integration? Create it. Need a Telegram bot? Create it.
+The agent doesn't start with dozens of hardcoded tools. It starts with a **small bootstrap set** (see `tools/*.py` with `TOOL_SPEC`). One of them — `create_tool` — lets it create *any tool it needs*. Need RAG? The project already ships `memory/rag.py`; the agent can extend via tools as needed.
 
 A tool the agent creates itself is a tool the agent *understands* and can *modify*. A tool you hardcode is a black box to the agent.
 
@@ -179,7 +183,7 @@ A tool the agent creates itself is a tool the agent *understands* and can *modif
 
 | Aspect | v1 (old) | v2 (current) |
 |--------|-----------------|----------------------|
-| Bootstrap tools | 32 | 7 |
+| Bootstrap tools | 32 | Small set (`tools/` + `TOOL_SPEC`) |
 | Kernel size | ~2000+ lines across files | ~200 lines, one file |
 | Memory system | 5 files, bounded, structured | 1 file, agent structures it |
 | Self-modification | Complex pipeline | Simple: write_file + git |

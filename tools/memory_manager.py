@@ -81,7 +81,6 @@ def _summarize_section(s: dict, max_chars: int = 200) -> str:
 def execute(params: dict) -> str:
     """Execute memory_manager action. Returns string for kernel."""
     action = params.get("action", "status")
-    content = params.get("content", "")
     threshold_date = params.get("threshold_date", "")
 
     if action == "status":
@@ -137,7 +136,6 @@ def execute(params: dict) -> str:
             return "Need threshold_date (YYYY-MM-DD) for archive action."
         archive_data = _load_archive()
         existing = archive_data.get("archived", [])
-        before = len(existing)
         if MEMORY_FILE.exists():
             preamble, sections = _parse_stream_sections(MEMORY_FILE.read_text(encoding="utf-8"))
             for s in sections:

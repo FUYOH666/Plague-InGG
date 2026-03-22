@@ -42,11 +42,11 @@ def execute(params: dict) -> str:
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
     tool_code = f'"""{name}: {description}\nCreated: {ts}\n"""\n\n'
-    tool_code += f"TOOL_SPEC = {{\n"
+    tool_code += "TOOL_SPEC = {\n"
     tool_code += f'    "name": {repr(name)},\n'
     tool_code += f'    "description": {repr(description)},\n'
     tool_code += f'    "params": {repr(params_spec)},\n'
-    tool_code += f"}}\n\n\ndef execute(params: dict) -> str:\n"
+    tool_code += "}\n\n\ndef execute(params: dict) -> str:\n"
     tool_code += indented + "\n"
 
     tool_path = TOOLS_DIR / f"{name}.py"

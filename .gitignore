@@ -3,7 +3,12 @@
 *.egg-info/
 __pycache__/
 *.pyc
+.pytest_cache/
+.ruff_cache/
 .venv/
+
+# Local pip config (use `uv sync`; do not commit machine-specific pip settings)
+.pip.conf
 memory/stream.md
 memory/vectors.jsonl
 memory/.index_mtime
