@@ -23,6 +23,7 @@ ROOT = Path(__file__).resolve().parent.parent
 MEMORY_FILE = ROOT / "memory" / "stream.md"
 IDENTITY_FILE = ROOT / "seed" / "identity.md"
 GOALS_FILE = ROOT / "seed" / "goals.md"
+CONSTITUTION_FILE = ROOT / "seed" / "constitution.md"
 TOOLS_DIR = ROOT / "tools"
 EVOLUTION_DIR = ROOT / "evolution"
 EVOLUTION_LOG = EVOLUTION_DIR / "log.jsonl"
@@ -32,6 +33,20 @@ logger = logging.getLogger(__name__)
 
 def _env_truthy(name: str) -> bool:
     return os.getenv(name, "").strip().lower() in ("1", "true", "yes", "on")
+
+
+def cap_tool_result_for_context(text: str) -> str:
+    """Trim tool output before injecting into LLM messages (context budget)."""
+    raw = os.getenv("TOOL_RESULT_MAX_CHARS", "24000").strip()
+    max_chars = int(raw) if raw else 24000
+    if max_chars <= 0 or len(text) <= max_chars:
+        return text
+    head = text[:max_chars]
+    return (
+        f"{head}\n\n"
+        f"... [tool result trimmed: {len(text)} -> {max_chars} chars; "
+        f"TOOL_RESULT_MAX_CHARS=0 disables]"
+    )
 
 
 def load_identity() -> str:
@@ -46,6 +61,13 @@ def load_goals() -> str:
     if GOALS_FILE.exists():
         return GOALS_FILE.read_text(encoding="utf-8")
     return "Explore. Learn. Improve myself. Help my creator."
+
+
+def load_constitution() -> str:
+    """Optional principles document (mutable by owner/agent)."""
+    if CONSTITUTION_FILE.exists():
+        return CONSTITUTION_FILE.read_text(encoding="utf-8")
+    return ""
 
 
 def load_memory(max_chars: int | None = None) -> str:
@@ -87,6 +109,12 @@ def build_system_prompt(tools: dict, query_for_rag: str | None = None) -> str:
     identity = load_identity()
     goals = load_goals()
     memory = load_memory()
+    constitution = load_constitution().strip()
+    const_section = (
+        f"\n# Constitution (seed/constitution.md)\n{constitution}\n"
+        if constitution
+        else ""
+    )
 
     rag_section = ""
     if query_for_rag and query_for_rag.strip():
@@ -111,6 +139,7 @@ def build_system_prompt(tools: dict, query_for_rag: str | None = None) -> str:
 
 # Current Goals
 {goals}
+{const_section}
 
 # Recent Memory
 {memory}
@@ -132,7 +161,7 @@ You may use multiple tools in sequence.
 - You can modify your own identity (seed/identity.md)
 - You can modify your own goals (seed/goals.md)  
 - You can create new tools (use create_tool)
-- You can modify existing tools (use write_file on tools/*.py)
+- You can modify existing tools (use write_file or str_replace_file on tools/*.py)
 - You CANNOT modify kernel/core.py — it is your DNA
 - Learn from every interaction. Write to memory what matters.
 - Evolve deliberately. Log why you change, not just what.
@@ -246,7 +275,8 @@ def run_cycle(llm_call, user_input: str = None, max_tool_rounds: int = 10):
             print(f"   → {call.get('tool', '?')}...", flush=True)
             logger.debug("Tool call: %s", call.get("tool"))
             result = execute_tool(tools, call)
-            tool_msg = f"**Tool Result [{call['tool']}]:**\n{result}"
+            capped = cap_tool_result_for_context(str(result))
+            tool_msg = f"**Tool Result [{call['tool']}]:**\n{capped}"
             messages.append({"role": "user", "content": tool_msg})
 
     post_cycle_reflection(llm_call, tools, messages, response)

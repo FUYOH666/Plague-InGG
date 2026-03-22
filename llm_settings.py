@@ -4,11 +4,46 @@ OpenAI-compatible LLM endpoint resolution (local / remote LLM service, OpenRoute
 
 from __future__ import annotations
 
+import json
+import logging
 import os
 from dataclasses import dataclass
-from typing import Mapping
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Mapping
 
 import httpx
+
+logger = logging.getLogger(__name__)
+
+_REPO_ROOT = Path(__file__).resolve().parent
+_LLM_USAGE_LOG = _REPO_ROOT / "evolution" / "llm_usage.jsonl"
+
+
+def _env_truthy_usage_log() -> bool:
+    return os.getenv("LLM_LOG_USAGE", "1").strip().lower() not in (
+        "0",
+        "false",
+        "no",
+        "off",
+    )
+
+
+def _append_llm_usage(settings: LLMSettings, usage: dict[str, Any]) -> None:
+    if not _env_truthy_usage_log() or not usage:
+        return
+    _LLM_USAGE_LOG.parent.mkdir(parents=True, exist_ok=True)
+    row = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "provider": settings.provider,
+        "model": settings.model,
+        "usage": usage,
+    }
+    try:
+        with open(_LLM_USAGE_LOG, "a", encoding="utf-8") as f:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    except OSError as e:
+        logger.warning("Could not append llm_usage log: %s", e)
 
 DEFAULT_LOCAL_BASE = "http://localhost:1234/v1"
 DEFAULT_OPENROUTER_BASE = "https://openrouter.ai/api/v1"
@@ -146,4 +181,7 @@ def post_chat_completion(settings: LLMSettings, messages: list) -> str:
     )
     response.raise_for_status()
     data = response.json()
+    usage = data.get("usage")
+    if isinstance(usage, dict) and usage:
+        _append_llm_usage(settings, usage)
     return data["choices"][0]["message"]["content"]

@@ -39,6 +39,8 @@ uv sync   # canonical install (see pyproject.toml + uv.lock)
 
 **Проверки:** `uv run pytest` — тесты; опционально `uvx ruff check .` (линт без добавления зависимости в проект).
 
+**Идеи из Ouroboros-подобных систем (без десктоп-стека):** лимит размера результата инструментов в контексте (`TOOL_RESULT_MAX_CHARS`), политика `shell` (`SHELL_POLICY`), защита от случайного усечения файла (`WRITE_FILE_SHRINK_GUARD`), инструмент `str_replace_file`, лог usage в `evolution/llm_usage.jsonl`, опциональный `seed/constitution.md`. См. `.env.example`.
+
 **REPL:** вводи сообщения, пустая строка — пропуск. Выход: `exit`, `quit`, `q` или Ctrl+D.
 
 ### MacBook + удалённый LLM-сервис (TailScale)
@@ -86,11 +88,13 @@ Plague-InGG/
 │   └── core.py          # THE KERNEL. Loop, RAG, reflection.
 ├── seed/
 │   ├── identity.md      # Who am I? (agent writes this)
-│   └── goals.md         # What do I want? (agent writes this)
+│   ├── goals.md         # What do I want? (agent writes this)
+│   └── constitution.md  # Optional principles (injected into system prompt if non-empty)
 ├── tools/
 │   ├── remember.py      # Write to memory stream
 │   ├── read_file.py     # Read any file
-│   ├── write_file.py    # Write any file (except kernel)
+│   ├── write_file.py    # Write any file (except kernel); optional shrink guard
+│   ├── str_replace_file.py # One exact substring replace (safer edits)
 │   ├── create_tool.py   # ★ Create new tools (+ smoke validation)
 │   ├── brave_search.py  # Search the web
 │   ├── memory_manager.py # Summarize, archive stream → archive.json
@@ -106,7 +110,8 @@ Plague-InGG/
 │   ├── test_tools_smoke.py
 │   └── test_llm_settings.py
 ├── evolution/
-│   └── log.jsonl        # Structured evolution history
+│   ├── log.jsonl        # Structured evolution history (gitignored if local)
+│   └── llm_usage.jsonl  # Token usage from API when LLM_LOG_USAGE=1 (gitignored)
 ├── main.py              # Entry point (LLM adapter)
 ├── llm_settings.py      # LLM base URL, OpenRouter headers, chat client
 ├── run                  # ./run to start

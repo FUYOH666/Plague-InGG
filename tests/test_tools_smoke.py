@@ -14,6 +14,11 @@ MINIMAL_PARAMS = {
     "remember": {"text": "smoke test"},
     "read_file": {"path": "README.md"},
     "write_file": {"path": "tests/.smoke_test_tmp", "content": "x"},
+    "str_replace_file": {
+        "path": "tests/.smoke_str_replace",
+        "old_string": "SMOKE_UNIQUE_MARKER",
+        "new_string": "smoke_ok",
+    },
     "shell": {"command": "echo ok"},
     "brave_search": {"query": "test", "count": 1},
     "create_tool": None,  # skip
@@ -46,21 +51,41 @@ def tools():
 
 def test_tools_discovered(tools):
     """At least core tools should be discoverable."""
-    assert len(tools) >= 5
+    assert len(tools) >= 6
     assert "remember" in tools
     assert "memory_manager" in tools
+    assert "str_replace_file" in tools
 
 
-@pytest.mark.parametrize("tool_name", ["remember", "list_dir", "memory_manager", "read_file", "shell", "write_file"])
+@pytest.mark.parametrize(
+    "tool_name",
+    [
+        "remember",
+        "list_dir",
+        "memory_manager",
+        "read_file",
+        "shell",
+        "str_replace_file",
+        "write_file",
+    ],
+)
 def test_tool_execute_smoke(tools, tool_name):
     """Each tool executes without crashing and returns str."""
     if tool_name not in tools:
         pytest.skip(f"Tool {tool_name} not discovered")
     if tool_name in MINIMAL_PARAMS and MINIMAL_PARAMS[tool_name] is None:
         pytest.skip(f"Tool {tool_name} skipped (modifies state)")
+    if tool_name == "str_replace_file":
+        (ROOT / "tests" / ".smoke_str_replace").write_text(
+            "SMOKE_UNIQUE_MARKER\n", encoding="utf-8"
+        )
     module = tools[tool_name]
     p = MINIMAL_PARAMS.get(tool_name, {})
-    result = module.execute(p)
+    try:
+        result = module.execute(p)
+    finally:
+        if tool_name == "str_replace_file":
+            (ROOT / "tests" / ".smoke_str_replace").unlink(missing_ok=True)
     assert isinstance(result, str), f"Tool {tool_name} must return str, got {type(result)}"
     if tool_name == "write_file":
         (ROOT / "tests" / ".smoke_test_tmp").unlink(missing_ok=True)

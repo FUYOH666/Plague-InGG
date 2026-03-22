@@ -16,6 +16,12 @@
 - **Валидация create_tool** — smoke test после создания, откат при ошибке
 - **Скрипт `run`** — запуск через `./run` без `python`
 - **Индикация** — "thinking...", "→ tool..." при работе
+- **TOOL_RESULT_MAX_CHARS** — обрезка вывода инструментов перед вставкой в контекст LLM (`kernel/core.py`)
+- **SHELL_POLICY** — `deny` (по умолчанию) / `strict` / `off` (`tools/shell.py`)
+- **str_replace_file** — точечная замена одной подстроки в файле
+- **WRITE_FILE_SHRINK_GUARD** — опциональный отказ при сильном уменьшении существующего файла
+- **LLM_LOG_USAGE** — запись `usage` из ответа API в `evolution/llm_usage.jsonl`
+- **seed/constitution.md** — опциональные принципы в system prompt
 
 ### Изменено
 
@@ -26,4 +32,6 @@
 - **main.py** — `load_llm_settings`, логирование HTTP-ошибок LLM, `logging.basicConfig` в CLI
 - **REPL** — пустая строка не выходит; выход: `exit` / `quit` / `q` / Ctrl+D
 - **MEMORY_MAX_CHARS**, **build_system_prompt** (RAG), **.env.example** — как ранее в релизе
-- **Репозиторий** — удалён `.pip.conf`; `.gitignore`: `.pytest_cache/`, `.ruff_cache/`, `.pip.conf`
+- **Репозиторий** — удалён `.pip.conf`; `.gitignore`: `.pytest_cache/`, `.ruff_cache/`, `.pip.conf`, `evolution/llm_usage.jsonl`
+- **shell** — политика по умолчанию `deny`; настраиваемые префиксы для `strict`
+- **README / .env.example** — документация новых флагов
