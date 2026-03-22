@@ -1,0 +1,12 @@
+.env
+.DS_Store
+*.egg-info/
+__pycache__/
+*.pyc
+.venv/
+memory/stream.md
+memory/vectors.jsonl
+memory/.index_mtime
+memory/archive.json
+evolution/log.jsonl
+data/
