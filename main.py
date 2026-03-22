@@ -1,5 +1,5 @@
 """
-Seed of Attention — Entry Point
+Plague-InGG — Entry Point
 
 Connects the kernel to any OpenAI-compatible LLM.
 This file CAN be modified by the agent (unlike kernel/core.py).

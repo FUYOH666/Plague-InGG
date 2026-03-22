@@ -89,7 +89,19 @@ def parse_llm_provider(environ: Mapping[str, str]) -> str:
 
 def resolve_raw_base_url(environ: Mapping[str, str], provider: str) -> str:
     if provider == "openrouter":
-        return _env_get(environ, "LLM_BASE_URL") or DEFAULT_OPENROUTER_BASE
+        raw = _env_get(environ, "LLM_BASE_URL")
+        if raw:
+            low = raw.lower()
+            if "localhost" in low or "127.0.0.1" in low:
+                logger.warning(
+                    "LLM_BASE_URL=%r is local while LLM_PROVIDER=openrouter; "
+                    "using %s (fix .env to avoid this warning).",
+                    raw,
+                    DEFAULT_OPENROUTER_BASE,
+                )
+                return DEFAULT_OPENROUTER_BASE
+            return raw
+        return DEFAULT_OPENROUTER_BASE
     return (
         _env_get(environ, "LOCAL_AI_LLM_BASE_URL")
         or _env_get(environ, "LLM_BASE_URL")

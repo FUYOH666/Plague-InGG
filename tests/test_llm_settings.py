@@ -61,6 +61,17 @@ def test_resolve_raw_base_url_openrouter():
     assert resolve_raw_base_url(env, "openrouter") == "https://custom.example/v1"
 
 
+def test_resolve_raw_base_url_openrouter_ignores_localhost():
+    assert (
+        resolve_raw_base_url({"LLM_BASE_URL": "http://localhost:1234/v1"}, "openrouter")
+        == "https://openrouter.ai/api/v1"
+    )
+    assert (
+        resolve_raw_base_url({"LLM_BASE_URL": "http://127.0.0.1:8000/v1"}, "openrouter")
+        == "https://openrouter.ai/api/v1"
+    )
+
+
 def test_resolve_llm_model_defaults():
     assert resolve_llm_model({}, "local") == "default"
     assert resolve_llm_model({}, "openrouter") == "openai/gpt-5.4-nano"

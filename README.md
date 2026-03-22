@@ -53,14 +53,19 @@ LOCAL_AI_LLM_BASE_URL=http://YOUR_TAILSCALE_HOST:8005/v1
 LLM_MODEL=default
 ```
 
-### OpenRouter (например GPT-5.4 Nano)
+### OpenRouter + эмбеддинги (типичный стек)
 
-Провайдер [OpenRouter](https://openrouter.ai/) совместим с OpenAI Chat Completions. Модель по умолчанию для этого режима: [`openai/gpt-5.4-nano`](https://openrouter.ai/openai/gpt-5.4-nano).
+Чат: провайдер [OpenRouter](https://openrouter.ai/) (OpenAI Chat Completions). Рекомендуемая модель: [`openai/gpt-5.4-nano`](https://openrouter.ai/openai/gpt-5.4-nano) (контекст до 400k токенов, см. карточку модели на OpenRouter).
+
+Память (RAG): тот же `.env` — `LOCAL_AI_EMBEDDING_BASE_URL` на ваш **BGE-M3** сервис (OpenAI-compatible, порт **9001**; в коде к base добавляется `/v1/embeddings`).
 
 ```bash
 LLM_PROVIDER=openrouter
 LLM_API_KEY=your-openrouter-api-key   # https://openrouter.ai/keys
-# LLM_BASE_URL по умолчанию https://openrouter.ai/api/v1 — переопределите при необходимости
+LLM_MODEL=openai/gpt-5.4-nano
+# Не указывайте LLM_BASE_URL=http://localhost:... при openrouter — иначе запросы уйдут на localhost.
+# LLM_BASE_URL по умолчанию https://openrouter.ai/api/v1
+LOCAL_AI_EMBEDDING_BASE_URL=http://YOUR_TAILSCALE_HOST:9001
 # Опционально для лидерборда OpenRouter:
 # OPENROUTER_HTTP_REFERER=https://your-site.example
 # OPENROUTER_APP_TITLE=Plague-InGG
@@ -174,6 +179,8 @@ A tool the agent creates itself is a tool the agent *understands* and can *modif
 6. Tests fail → self_improve(action="revert") → discarded
 7. Evolution logged to evolution/log.jsonl
 ```
+
+After `action=start`, the active evolve branch name is stored in `evolution/.active_evolve_branch` (one line, local only; gitignored) so `test`, `commit`, and `revert` know which branch to use. You can override it with the optional `branch` parameter. Tests are run with the same Python interpreter as the agent (`python -m pytest` via `sys.executable`).
 
 ## Design Principles
 

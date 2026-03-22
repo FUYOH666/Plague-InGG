@@ -1,14 +1,13 @@
 """
-Seed of Attention — Kernel (Immutable)
+Plague-InGG — Kernel (Immutable)
 
-This is the "attention" of the system.
-It has no content, no personality, no goals.
-It is pure capability: perceive → think → act → remember → evaluate.
+Minimal loop: perceive → think → act → remember → evaluate.
+No baked-in persona; identity lives in seed/ and memory.
 
-The agent can modify everything EXCEPT this file.
-This is the DNA. Tools are proteins. Memory is phenotype.
+The agent can modify everything EXCEPT this file (DNA).
+Tools, goals, and stream are the growing phenotype.
 
-~200 lines. Simple. Genius. Alive.
+~200 lines.
 """
 
 import json
@@ -53,7 +52,9 @@ def load_identity() -> str:
     """Load agent's self-written identity (mutable by agent)."""
     if IDENTITY_FILE.exists():
         return IDENTITY_FILE.read_text(encoding="utf-8")
-    return "I am a seed. I have no identity yet. I will grow one."
+    return (
+        "Plague-InGG: no seed/identity.md yet — write who I am in that file."
+    )
 
 
 def load_goals() -> str:
@@ -258,7 +259,7 @@ def run_cycle(llm_call, user_input: str = None, max_tool_rounds: int = 10):
 
     for round_num in range(max_tool_rounds):
         # Think
-        print("🌱 thinking...", flush=True)
+        print("thinking...", flush=True)
         logger.debug("LLM round %s", round_num)
         response = llm_call(messages)
         messages.append({"role": "assistant", "content": response})
@@ -286,8 +287,7 @@ def run_cycle(llm_call, user_input: str = None, max_tool_rounds: int = 10):
 
 def repl(llm_call):
     """Simple REPL for terminal interaction."""
-    print("🌱 Seed of Attention — alive.")
-    print("   Type your message. 'exit' or Ctrl+D to quit.\n")
+    print("Plague-InGG — готов. Введите сообщение. Выход: exit, quit, q или Ctrl+D.\n")
 
     while True:
         try:
@@ -303,4 +303,4 @@ def repl(llm_call):
         response = run_cycle(llm_call, user_input)
         print(f"\n🌿 {response}\n")
 
-    print("\n🌙 Seed rests.")
+    print("\nPlague-InGG — сессия завершена.")

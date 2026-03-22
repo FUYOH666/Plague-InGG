@@ -15,4 +15,5 @@ memory/.index_mtime
 memory/archive.json
 evolution/log.jsonl
 evolution/llm_usage.jsonl
+evolution/.active_evolve_branch
 data/

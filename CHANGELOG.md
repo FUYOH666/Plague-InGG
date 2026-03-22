@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Изменено
+
+- **seed/goals.md** — раздел «Мандат эксперимента»: инициатива, выбор направления, цикл `self_improve`, границы и тон для самоэволюции
+- **Идентичность / UX** — бренд **Plague-InGG** вместо «Seed of Attention» / «семя внимания»: [seed/identity.md](seed/identity.md), REPL и docstring [kernel/core.py](kernel/core.py), [main.py](main.py); нейтральная строка `thinking...`
+- **Конфиг OpenRouter + RAG** — README / `.env.example`: явно `openai/gpt-5.4-nano`, предупреждение про `LLM_BASE_URL=localhost` при `openrouter`; `resolve_raw_base_url` игнорирует локальный `LLM_BASE_URL` в режиме OpenRouter с логом
+
+### Исправлено
+
+- **self_improve** — корректный `git merge --no-ff <ветка>` и `git branch -D <ветка>`; имя ветки сохраняется в `evolution/.active_evolve_branch` (в `.gitignore`); проверка текущей ветки для `test`/`commit`; pytest через `sys.executable -m pytest`; сообщения об ошибках git; опциональный параметр `branch`; тесты `tests/test_self_improve.py`
+
 ### Добавлено
 
 - **OpenRouter** — `LLM_PROVIDER=openrouter`, база `https://openrouter.ai/api/v1`, модель по умолчанию `openai/gpt-5.4-nano`, опциональные `OPENROUTER_HTTP_REFERER` / `OPENROUTER_APP_TITLE`
